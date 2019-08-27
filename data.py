@@ -1,34 +1,28 @@
 import sqlite3
+# from main import write_log
 
 
 def execute_sql(query, params=()):
-    print('Подключение к базе...')
+    """ Выполняет sql-запрос и возвращает запрошенные данные """
     try:
         # Подключаемся к БД (если её нет - создаём), выполняем запрос и подтверждаем изменения
-        with sqlite3.connect('products') as cnxn:
+        with sqlite3.connect('out/berg') as cnxn:
+            data = []
             cursor = cnxn.cursor()
             cursor.execute(query, params)
+            data = cursor.fetchall()
             cnxn.commit()
-            print('Запрос выполнен')
     except sqlite3.Error as e:
         print('Ошибка БД: ' + str(e))
+        write_log(f'execute_sql error: {query}')
+    return data
 
 
-query = 'CREATE TABLE IF NOT EXISTS goods (id INTEGER PRIMARY KEY, articul TEXT, title TEXT, brand TEXT, images TEXT)'
-execute_sql(query)
-
-columns = ('id', 'articul', 'title', 'brand', 'image')
-joined_columns = ', '.join(columns)
-
-product_id = 1772314
-articul = 'T51565'
-title = 'Акк'
-brand = 'Барс 60 Ач Обр.'
-image = ['http://berg.ru/1267.jpg', 'http://berg.ru/973.jpg']
-
-values = (str(product_id), articul, title, brand, ' '.join(image))
-
-query = f'INSERT INTO goods ({joined_columns}) VALUES {values}'
-print(query)
-execute_sql(query)
-
+def convert_to_string(*args, value=True):
+    """ Подготавливает данные к подстановке в sql-запрос """
+    args = list(args)
+    for i in range(len(args)):
+        if type(args[i]) == list or type(args[i]) == tuple or type(args[i]) == set:
+            args[i] = ', '.join(args[i])
+    string = ', '.join([f'"{str(arg)}"' if value else str(arg) for arg in args])
+    return string
